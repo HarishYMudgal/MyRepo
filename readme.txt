@@ -1,1 +1,1 @@
-Generating the FMCW wave
+Generating the FMCW wave and also generating a sample sine wave.
