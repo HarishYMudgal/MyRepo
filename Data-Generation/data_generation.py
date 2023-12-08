@@ -10,8 +10,8 @@ plt.close('all')
 
 #Scene Specifications
 
-rad_dist = [5, 30, 20]               # Radial distance of target from radar in meters
-rad_vel = [20, -20, 30]              # Radial velocity of target relative to radar in meter/sec
+rad_dist = [30, 30, 30]               # Radial distance of target from radar in meters
+rad_vel = [20, 50, 70]              # Radial velocity of target relative to radar in meter/sec
 
 
 
@@ -27,7 +27,7 @@ NoisePower = -120                # Noise Power in dB
 fc = 79e9                        # Center frequency of chirp
 BW = 2e9                         # Bandwidth of the chirp
 Npts = 1024                      # Number of sample points of each chirp
-Nramps = 20                      # Number of ramps
+Nramps = 512                      # Number of ramps
 fs = 112e6                       # Sampling frequency
 
 EM_vel = 3e8                     # EM wave velocity in meter/sec
@@ -81,32 +81,34 @@ for n in range(Nramps-1):
     for i in range(len(rad_dist)):
 
         f = (S * 2 * rad_dist[i]) / EM_vel
-        ini_phase = (4 * np.pi * fc * rad_dist[i]) / EM_vel
-        IF_sig = (sig_amp[i] * np.sin((2 * np.pi * f * t) + ini_phase)) + AWGNnoise                   
-        phase = np.exp((1j * 4 * np.pi * fc * rad_vel[i] * (n) * Tramp)/EM_vel)             
+        # ini_phase = (4 * np.pi * fc * rad_dist[i]) / EM_vel
+        IF_sig = (sig_amp[i] * np.sin((2 * np.pi * f * t) + (ini_phase))) + AWGNnoise                   
+        phase = np.exp((1j * 4 * np.pi * fc * rad_vel[i] * (n) * Tramp)/EM_vel)        
         IF_phase += IF_sig * phase
         
     frame[:, n] = IF_phase * WindowRange                                                           # Windowing Each chirp
 
 Range_FFT = np.fft.fft(frame, n = Npts, axis = 0) / Npts                                           # Range FFT of each chirp
 
-frame = Range_FFT[:,:Nramps] * WindowDoppler                                                       # Windowing across chirps
-Doppler_FFT = np.fft.fft(Range_FFT[:(Npts//2), :Nramps], n = Nramps, axis = 1) / Nramps            # Doppler FFT across chirps
-Doppler_FFTshift = np.fft.fftshift(Doppler_FFT[:(Npts//2), :], axes = 1)
-plt.figure(1)
+frame = Range_FFT[:,:Nramps] * WindowDoppler[None, :]
+
+aa = Range_FFT[:(Npts//2), :]                                                   # Windowing across chirps
+Doppler_FFT = np.fft.fft(aa, n = Nramps, axis = 1) / Nramps            # Doppler FFT across chirps
+# Doppler_FFTshift = np.fft.fftshift(Doppler_FFT[:(Npts//2), :], axes = 1)
+plt.figure(1, dpi=200)
 plt.plot(20*np.log10(abs(Range_FFT[:(Npts//2)])))
 #plt.plot(abs(Range_FFT[:(Npts//2)]))
 plt.title("Range FFT")
 plt.xlabel("Range bins   ----------------->")
-plt.ylabel("Amplitude in dB    -------------->")
+plt.ylabel("Power in dB    -------------->")
 plt.grid(True)
 
 
-plt.figure(2)
-plt.plot(20*np.log10(abs(Doppler_FFTshift[400, :])))
+plt.figure(2, dpi=200)
+plt.plot(20*np.log10(np.abs(Doppler_FFT[267, :])))
 plt.title("Doppler FFT")
 plt.xlabel("Doppler bins    ------------->")
-plt.ylabel("Amplitude in dB    ------------->")
+plt.ylabel("Power in dB    ------------->")
 plt.grid(True)
 
 
